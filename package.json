@@ -1,0 +1,9 @@
+{
+  "name": "siana-shopify-webhook",
+  "version": "1.0.0",
+  "description": "Siana Digital — Shopify → sGTM webhook bridge",
+  "main": "api/webhook.js",
+  "engines": {
+    "node": ">=18"
+  }
+}

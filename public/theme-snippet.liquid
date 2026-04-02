@@ -1,0 +1,105 @@
+<script>
+(function () {
+  'use strict';
+
+  function getParam(name) {
+    return new URLSearchParams(window.location.search).get(name) || '';
+  }
+
+  function getCookie(name) {
+    var m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  function setLS(key, value, days) {
+    try {
+      localStorage.setItem(key, JSON.stringify({ value: value, expiry: Date.now() + days * 864e5 }));
+    } catch(e) {}
+  }
+
+  function getLS(key) {
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return '';
+      var data = JSON.parse(raw);
+      if (data.expiry && Date.now() > data.expiry) { localStorage.removeItem(key); return ''; }
+      return data.value || '';
+    } catch(e) { return ''; }
+  }
+
+  function getGAClientId() {
+    var ga = getCookie('_ga');
+    if (ga) { var m = ga.match(/GA\d+\.\d+\.(\d+\.\d+)/); if (m) return m[1]; }
+    return '';
+  }
+
+  function getGASessionId() {
+    var cookies = document.cookie.split('; ');
+    for (var i = 0; i < cookies.length; i++) {
+      if (cookies[i].indexOf('_ga_') === 0) {
+        var parts = cookies[i].split('=')[1].split('.');
+        if (parts[2] && !isNaN(parts[2])) return parts[2];
+      }
+    }
+    return '';
+  }
+
+  var isNewSession = !getLS('_siana_landing_page');
+  var now = Date.now();
+
+  var params = {
+    _siana_gclid:        getParam('gclid')        || getLS('_siana_gclid'),
+    _siana_wbraid:       getParam('wbraid')       || getLS('_siana_wbraid'),
+    _siana_gbraid:       getParam('gbraid')       || getLS('_siana_gbraid'),
+    _siana_gclsrc:       getParam('gclsrc')       || getLS('_siana_gclsrc'),
+    _siana_fbclid:       getParam('fbclid')       || getLS('_siana_fbclid'),
+    _siana_fbp:          getCookie('_fbp')        || getLS('_siana_fbp'),
+    _siana_fbc:          getCookie('_fbc')        || getLS('_siana_fbc'),
+    _siana_ttclid:       getParam('ttclid')       || getLS('_siana_ttclid'),
+    _siana_ttp:          getCookie('_ttp')        || getLS('_siana_ttp'),
+    _siana_msclkid:      getParam('msclkid')      || getLS('_siana_msclkid'),
+    _siana_li_fat_id:    getCookie('li_fat_id')   || getLS('_siana_li_fat_id'),
+    _siana_utm_source:   getParam('utm_source')   || getLS('_siana_utm_source'),
+    _siana_utm_medium:   getParam('utm_medium')   || getLS('_siana_utm_medium'),
+    _siana_utm_campaign: getParam('utm_campaign') || getLS('_siana_utm_campaign'),
+    _siana_utm_term:     getParam('utm_term')     || getLS('_siana_utm_term'),
+    _siana_utm_content:  getParam('utm_content')  || getLS('_siana_utm_content'),
+    _siana_utm_id:       getParam('utm_id')       || getLS('_siana_utm_id'),
+    _siana_client_id:    getGAClientId()          || getLS('_siana_client_id'),
+    _siana_session_id:   getGASessionId()         || getLS('_siana_session_id'),
+    _siana_landing_page: isNewSession ? window.location.href : getLS('_siana_landing_page'),
+    _siana_referrer:     isNewSession ? document.referrer    : getLS('_siana_referrer'),
+    _siana_page_location: window.location.href,
+    _siana_user_agent:   navigator.userAgent,
+  };
+
+  if (getParam('fbclid') && !params._siana_fbc) {
+    params._siana_fbc = 'fb.1.' + now + '.' + getParam('fbclid');
+  }
+
+  Object.keys(params).forEach(function(key) {
+    if (!params[key]) return;
+    var days = (key === '_siana_wbraid' || key === '_siana_gbraid') ? 30 : 90;
+    setLS(key, params[key], days);
+  });
+
+  function updateCartAttributes() {
+    var attributes = {};
+    Object.keys(params).forEach(function(key) {
+      if (params[key]) attributes[key] = params[key];
+    });
+    if (Object.keys(attributes).length === 0) return;
+    fetch('/cart/update.js', {
+      method:      'POST',
+      headers:     { 'Content-Type': 'application/json' },
+      body:        JSON.stringify({ attributes: attributes }),
+      credentials: 'same-origin',
+    }).catch(function() {});
+  }
+
+  setTimeout(updateCartAttributes, 800);
+  document.addEventListener('cart:updated', updateCartAttributes);
+  document.addEventListener('cart:add',     updateCartAttributes);
+
+})();
+</script>
