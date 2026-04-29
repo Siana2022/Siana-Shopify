@@ -47,6 +47,19 @@ module.exports = async function handler(req, res) {
   }
   console.log(`[${ts}] Pedido #${order.order_number} — ${order.email} — ${order.total_price} ${order.currency}`);
 
+  // --- Filtro Tiktok ---
+  const topic = req.headers['x-shopify-topic'] || '';
+
+  if (order.financial_status !== 'paid') {
+    return res.status(200).json({ skipped: 'order not paid' });
+  }
+
+  const isTikTok = order.source_name === 'tiktok' || order.source_name === '6033105';
+  if (topic === 'orders/create' && !isTikTok) {
+    return res.status(200).json({ skipped: 'not tiktok order' });
+  }
+  // --- HASTA AQUÍ ---
+  
   let payload;
   try {
     payload = buildPurchasePayload(order, EVENT_NAME);
