@@ -60,13 +60,16 @@ module.exports = async function handler(req, res) {
   }
   // --- HASTA AQUÍ ---
   
-  let payload;
-  try {
-    payload = buildPurchasePayload(order, EVENT_NAME);
-  } catch (e) {
-    console.log(`[${ts}] Error payload: ${e.message}`);
-    return res.status(500).json({ error: e.message });
-  }
+// Los pedidos de TikTok Shop siempre disparan 'tiktok_pixel', el resto usa EVENT_NAME
+const resolvedEventName = isTikTok ? 'tiktok_pixel' : EVENT_NAME;
+
+let payload;
+try {
+  payload = buildPurchasePayload(order, resolvedEventName);
+} catch (e) {
+  console.log(`[${ts}] Error payload: ${e.message}`);
+  return res.status(500).json({ error: e.message });
+}
 
   if (DEBUG) console.log(`[${ts}] Payload: ${JSON.stringify(payload, null, 2)}`);
   else console.log(`[${ts}] Payload OK — ${payload.event_name} — ${payload.ecommerce?.value} ${payload.ecommerce?.currency}`);
