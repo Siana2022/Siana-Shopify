@@ -61,7 +61,7 @@ module.exports = async function handler(req, res) {
   // --- HASTA AQUÍ ---
   
 // Los pedidos de TikTok Shop siempre disparan 'tiktok_pixel', el resto usa EVENT_NAME
-const resolvedEventName = isTikTok ? 'tiktok_pixel' : EVENT_NAME;
+const resolvedEventName = isTikTok ? 'purchase_tiktok_siana' : EVENT_NAME;
 
 let payload;
 try {
